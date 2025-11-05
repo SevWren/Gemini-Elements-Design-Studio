@@ -1,0 +1,262 @@
+<div class="space-y-6">
+  <div>
+    <h2 class="text-2xl font-bold text-white">Generate Image Asset</h2>
+    <p class="mt-1 text-gray-400">Bring your ideas to life. Describe an image, and Gemini will create it.</p>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 lg:gap-8 items-start">
+    <!-- Left Column: Controls -->
+    <div class="space-y-6">
+      <div class="space-y-4">
+        <div>
+          <div class="flex justify-between items-center">
+            <label for="image-prompt" class="block text-sm font-medium text-gray-300">Image Prompt</label>
+            <div class="flex items-center gap-x-2">
+              <button 
+                (click)="toggleSavedPrompts()"
+                class="inline-flex items-center gap-x-1 rounded-md bg-white/10 px-2 py-1 text-xs font-semibold text-white shadow-sm hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4 -ml-0.5">
+                  <path d="M3.5 4A1.5 1.5 0 002 5.5v1.75c0 .414.336.75.75.75h14.5a.75.75 0 00.75-.75V5.5A1.5 1.5 0 0016.5 4h-4.81c-.34 0-.672.066-.973.188a2.5 2.5 0 01-1.434 0C8.982 4.066 8.65 4 8.31 4H3.5z" />
+                  <path fill-rule="evenodd" d="M2 9.5a.75.75 0 01.75-.75h14.5a.75.75 0 01.75.75v5A1.5 1.5 0 0116.5 16H3.5A1.5 1.5 0 012 14.5v-5zM4.75 11a.75.75 0 000 1.5h10.5a.75.75 0 000-1.5H4.75z" clip-rule="evenodd" />
+                </svg>
+                {{ showSavedPrompts() ? 'Hide' : 'Load' }}
+              </button>
+              <button 
+                (click)="saveCurrentPrompt()"
+                [disabled]="!prompt().trim() || savedPrompts().includes(prompt().trim())"
+                class="inline-flex items-center gap-x-1 rounded-md bg-white/10 px-2 py-1 text-xs font-semibold text-white shadow-sm hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <svg class="-ml-0.5 h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" />
+                </svg>
+                Save
+              </button>
+            </div>
+          </div>
+          <input
+            id="image-prompt"
+            type="text"
+            [value]="prompt()"
+            (input)="updatePrompt($event)"
+            class="mt-1 block w-full rounded-md border-0 bg-white/5 py-2 px-3 text-white shadow-sm ring-1 ring-inset ring-white/10 focus:ring-2 focus:ring-inset focus:ring-indigo-500 sm:text-sm sm:leading-6 transition"
+            placeholder="e.g., An isometric icon of a database, clean vector style..."
+          />
+        </div>
+
+        @if(referenceImage(); as refImg) {
+          <div class="space-y-2">
+            <label class="block text-sm font-medium text-gray-300">Reference Image</label>
+            <div class="relative w-32">
+              <img [src]="'data:' + refImg.mimeType + ';base64,' + refImg.base64" alt="Reference image" class="rounded-md ring-1 ring-white/10" />
+              <button (click)="clearReferenceImage()" class="absolute -top-2 -right-2 p-1 bg-gray-700 rounded-full text-white hover:bg-red-600 transition-colors">
+                <span class="sr-only">Clear reference image</span>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="w-4 h-4">
+                  <path d="M5.28 4.22a.75.75 0 0 0-1.06 1.06L6.94 8l-2.72 2.72a.75.75 0 1 0 1.06 1.06L8 9.06l2.72 2.72a.75.75 0 1 0 1.06-1.06L9.06 8l2.72-2.72a.75.75 0 0 0-1.06-1.06L8 6.94 5.28 4.22Z" />
+                </svg>
+              </button>
+            </div>
+            <p class="text-xs text-gray-400">The next generated image will be based on this one.</p>
+          </div>
+        }
+
+        <div>
+          <label class="block text-sm font-medium text-gray-300">Aspect Ratio</label>
+          <fieldset class="mt-2">
+            <div class="flex flex-wrap gap-3">
+              @for(ratio of aspectRatios; track ratio) {
+                <div>
+                  <label
+                    class="cursor-pointer rounded-md px-3 py-2 text-sm font-semibold ring-1 ring-inset transition"
+                    [class]="aspectRatio() === ratio
+                      ? 'bg-indigo-600 text-white ring-indigo-600'
+                      : 'bg-gray-800 text-gray-300 ring-gray-700 hover:bg-gray-700'"
+                  >
+                    <input type="radio" name="aspect-ratio" [value]="ratio" class="sr-only" (change)="setAspectRatio(ratio)" [checked]="aspectRatio() === ratio">
+                    <span>{{ ratio }}</span>
+                  </label>
+                </div>
+              }
+            </div>
+          </fieldset>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-300">Number of Images</label>
+          <fieldset class="mt-2">
+            <div class="flex flex-wrap gap-3">
+              @for(count of imageCounts; track count) {
+                <div>
+                  <label
+                    class="cursor-pointer rounded-md px-3 py-2 text-sm font-semibold ring-1 ring-inset transition"
+                    [class]="numberOfImages() === count
+                      ? 'bg-indigo-600 text-white ring-indigo-600'
+                      : 'bg-gray-800 text-gray-300 ring-gray-700 hover:bg-gray-700'"
+                  >
+                    <input type="radio" name="image-count" [value]="count" class="sr-only" (change)="setNumberOfImages(count)" [checked]="numberOfImages() === count">
+                    <span>{{ count }}</span>
+                  </label>
+                </div>
+              }
+            </div>
+          </fieldset>
+        </div>
+      </div>
+
+      @if (showSavedPrompts()) {
+        <div class="space-y-6 pt-4 border-t border-white/10">
+          @if (savedPrompts().length > 0) {
+            <div class="space-y-3">
+              <h3 class="text-base font-semibold leading-6 text-white">Saved Prompts</h3>
+              <div class="max-h-60 overflow-y-auto pr-2 space-y-2">
+                  @for (savedPrompt of savedPrompts(); track savedPrompt; let i = $index) {
+                  <div class="group flex items-center justify-between gap-x-3 rounded-md bg-gray-800/50 p-2 ring-1 ring-inset ring-white/10">
+                    <p class="text-sm text-gray-300 truncate" title="{{ savedPrompt }}">{{ savedPrompt }}</p>
+                    <div class="flex-shrink-0 flex items-center gap-x-2">
+                      <button 
+                          (click)="loadPrompt(savedPrompt)"
+                          class="rounded bg-white/10 px-2 py-1 text-xs font-semibold text-white shadow-sm hover:bg-white/20 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
+                      >
+                          Load
+                      </button>
+                      <button 
+                          (click)="deletePrompt(i)"
+                          class="rounded p-1 text-gray-400 hover:text-white hover:bg-white/10 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
+                      >
+                        <span class="sr-only">Delete prompt</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="w-4 h-4">
+                          <path fill-rule="evenodd" d="M5 3.25V4H2.75a.75.75 0 0 0 0 1.5h.3l.815 8.15A1.5 1.5 0 0 0 5.357 15h5.285a1.5 1.5 0 0 0 1.493-1.35l.815-8.15h.3a.75.75 0 0 0 0-1.5H11v-.75A2.25 2.25 0 0 0 8.75 1h-1.5A2.25 2.25 0 0 0 5 3.25Zm2.25-.75a.75.75 0 0 0-.75.75V4h3v-.75a.75.75 0 0 0-.75-.75h-1.5ZM6.05 6a.75.75 0 0 1 .787.713l.275 5.5a.75.75 0 0 1-1.498.075l-.275-5.5A.75.75 0 0 1 6.05 6Zm3.9 0a.75.75 0 0 1 .712.787l-.275 5.5a.75.75 0 0 1-1.498-.075l.275-5.5a.75.75 0 0 1 .786-.711Z" clip-rule="evenodd" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                  }
+              </div>
+            </div>
+          }
+
+          <div class="space-y-3">
+            <h3 class="text-base font-semibold leading-6 text-white">Preset Prompts: Image Generation</h3>
+            
+            <div class="flex flex-wrap gap-2">
+              @for(category of presetPromptCategories; track category.name) {
+                <button
+                  (click)="selectPresetCategory(category)"
+                  class="cursor-pointer rounded-md px-3 py-1.5 text-xs font-semibold ring-1 ring-inset transition"
+                  [class]="activePresetCategory() === category
+                    ? 'bg-indigo-600 text-white ring-indigo-600'
+                    : 'bg-gray-800 text-gray-300 ring-gray-700 hover:bg-gray-700'"
+                >
+                  {{ category.name }}
+                </button>
+              }
+            </div>
+            
+            @if (activePresetCategory(); as category) {
+              <div class="space-y-2 pt-2">
+                <div>
+                  <input
+                    type="text"
+                    [value]="promptFilter()"
+                    (input)="updatePromptFilter($event)"
+                    class="block w-full rounded-md border-0 bg-white/5 py-1.5 px-3 text-white shadow-sm ring-1 ring-inset ring-white/10 focus:ring-2 focus:ring-inset focus:ring-indigo-500 sm:text-sm sm:leading-6 transition"
+                    placeholder="Filter prompts in '{{ category.name }}'..."
+                  />
+                </div>
+                
+                <div class="relative">
+                  <div 
+                    class="overflow-y-auto pr-2 space-y-2 pb-4 rounded-md transition-all ring-2 ring-transparent"
+                    [style.height.px]="promptContainerHeight()"
+                    [class.ring-indigo-500]="isResizing()"
+                    [class.select-none]="isResizing()"
+                  >
+                    @for (preset of filteredPrompts(); track preset) {
+                      <div class="group flex items-center justify-between gap-x-3 rounded-md bg-gray-800/50 p-2 ring-1 ring-inset ring-white/10">
+                        <p class="text-sm text-gray-300 truncate" title="{{ preset }}">{{ preset }}</p>
+                        <div class="flex-shrink-0">
+                          <button 
+                              (click)="loadPrompt(preset)"
+                              class="rounded bg-white/10 px-2 py-1 text-xs font-semibold text-white shadow-sm hover:bg-white/20 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
+                          >
+                              Load
+                          </button>
+                        </div>
+                      </div>
+                    }
+                    @if (filteredPrompts().length === 0) {
+                      <p class="text-center text-sm text-gray-500 py-4">No prompts match your filter.</p>
+                    }
+                  </div>
+                  <div 
+                    class="absolute bottom-0 left-0 w-full h-4 bg-gray-800/60 backdrop-blur-sm cursor-ns-resize flex justify-center items-center group"
+                    (mousedown)="onResizeStart($event)"
+                  >
+                    <div class="w-10 h-1.5 bg-gray-600 rounded-full group-hover:bg-indigo-500 transition-colors"></div>
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      }
+
+
+      <div class="text-right">
+        <button
+          (click)="generateImage()"
+          [disabled]="isLoading()"
+          class="inline-flex items-center justify-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        >
+          Generate Image
+        </button>
+      </div>
+    </div>
+
+    <!-- Right Column: Output -->
+    <div class="relative min-h-[40vh] lg:min-h-[70vh] bg-gray-900/50 rounded-lg ring-1 ring-white/10 flex items-center justify-center p-4 mt-6 lg:mt-0">
+      @if (isLoading()) {
+        <app-loading-spinner />
+      } @else if (error()) {
+        <div class="rounded-md bg-red-900/50 p-4 border border-red-700 w-full">
+          <p class="text-sm text-red-300">{{ error() }}</p>
+        </div>
+      } @else if (result(); as imageUrls) {
+        @if (imageUrls.length > 0) {
+          <div class="w-full h-full overflow-y-auto">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              @for (imageUrl of imageUrls; track $index) {
+                <div class="flex flex-col items-center justify-center gap-2 p-2 rounded-md bg-gray-800/50 ring-1 ring-white/10">
+                  <div class="flex-grow flex items-center justify-center w-full">
+                    <div class="rounded-lg overflow-hidden">
+                      <img [src]="imageUrl" alt="Generated image" class="w-full h-auto object-contain" />
+                    </div>
+                  </div>
+                  <div class="flex-shrink-0 w-full flex items-center justify-center gap-x-2">
+                      <button (click)="downloadImage(imageUrl)" class="flex-1 inline-flex items-center justify-center gap-x-1.5 rounded-md bg-white/10 px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-white/20 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="w-4 h-4 -ml-0.5">
+                          <path d="M8.75 2.25a.75.75 0 0 0-1.5 0v6.51L5.72 7.23a.75.75 0 0 0-1.06 1.06l3.5 3.5a.75.75 0 0 0 1.06 0l3.5-3.5a.75.75 0 0 0-1.06-1.06L8.75 8.76V2.25Z" />
+                          <path d="M2.5 12a.75.75 0 0 0-1.5 0v1.5A2.75 2.75 0 0 0 3.75 16h8.5A2.75 2.75 0 0 0 15 13.5v-1.5a.75.75 0 0 0-1.5 0v1.5c0 .69-.56 1.25-1.25 1.25h-8.5c-.69 0-1.25-.56-1.25-1.25v-1.5Z" />
+                        </svg>
+                        Download
+                      </button>
+                      <button (click)="useAsReference(imageUrl)" class="flex-1 inline-flex items-center justify-center gap-x-1.5 rounded-md bg-indigo-600/80 px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-indigo-500/80 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="w-4 h-4 -ml-0.5">
+                           <path d="m2.75 2.813 8.423 3.063a.75.75 0 0 1 0 1.248L2.75 10.187V2.813ZM11.838 6.54L3.5 3.102v6.983l8.338-3.418a.75.75 0 0 0 0-1.25Z" />
+                        </svg>
+                        Reference
+                      </button>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        }
+      } @else {
+        <div class="text-center text-gray-500">
+            <p class="text-base">Your generated image will appear here.</p>
+         </div>
+      }
+    </div>
+  </div>
+</div>

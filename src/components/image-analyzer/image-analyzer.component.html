@@ -1,0 +1,95 @@
+<div class="space-y-6">
+  <div>
+    <h2 class="text-2xl font-bold text-white">Analyze Image</h2>
+    <p class="mt-1 text-gray-400">Upload a UI screenshot or design mock-up for an expert analysis.</p>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div class="space-y-4">
+      <input #fileInput type="file" (change)="onFileChange($event)" accept="image/*" class="hidden">
+      
+      <div>
+        <label class="block text-sm font-medium text-gray-300">Image Source</label>
+        @if (uploadedImage()) {
+          <div class="mt-1 relative">
+            <img [src]="'data:' + uploadedImage()!.mimeType + ';base64,' + uploadedImage()!.base64" alt="Uploaded preview" class="w-full h-auto rounded-md ring-1 ring-white/10">
+            <div class="absolute top-2 right-2 flex gap-2">
+                <button (click)="triggerFileInput(fileInput)" class="bg-gray-800/70 hover:bg-gray-700/70 text-white text-xs font-semibold py-1 px-2 rounded-md transition-colors">Change file</button>
+                <button (click)="openCameraModal()" class="bg-gray-800/70 hover:bg-gray-700/70 text-white text-xs font-semibold py-1 px-2 rounded-md transition-colors">Retake</button>
+            </div>
+            <p class="mt-2 text-sm text-gray-400 truncate max-w-xs">{{ uploadedImage()?.name }}</p>
+          </div>
+        } @else {
+          <div class="mt-1 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div 
+              (click)="triggerFileInput(fileInput)"
+              class="flex flex-col justify-center items-center rounded-lg border border-dashed border-gray-600 p-6 cursor-pointer hover:border-indigo-500 transition-colors bg-white/5 h-48 text-gray-500 hover:text-indigo-400">
+              <svg class="mx-auto h-12 w-12" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+              </svg>
+              <p class="mt-2 text-sm text-gray-400">Upload from device</p>
+              <p class="text-xs">Click to select a file</p>
+            </div>
+            <button
+              type="button"
+              (click)="openCameraModal()"
+              class="flex flex-col justify-center items-center rounded-lg border border-dashed border-gray-600 p-6 cursor-pointer hover:border-indigo-500 transition-colors bg-white/5 h-48 text-gray-500 hover:text-indigo-400">
+              <svg class="mx-auto h-12 w-12" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.776 48.776 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z" />
+              </svg>
+              <p class="mt-2 text-sm text-gray-400">Use camera</p>
+              <p class="text-xs">Capture a new image</p>
+            </button>
+          </div>
+        }
+      </div>
+
+      <div>
+        <label for="analysis-prompt" class="block text-sm font-medium text-gray-300">Analysis Prompt</label>
+        <input
+          id="analysis-prompt"
+          type="text"
+          [value]="prompt()"
+          (input)="updatePrompt($event)"
+          class="mt-1 block w-full rounded-md border-0 bg-white/5 py-2 px-3 text-white shadow-sm ring-1 ring-inset ring-white/10 focus:ring-2 focus:ring-inset focus:ring-indigo-500 sm:text-sm sm:leading-6 transition"
+          placeholder="e.g., Generate HTML for this component..."
+        />
+      </div>
+
+       <div class="text-right">
+        <button
+          (click)="analyzeImage()"
+          [disabled]="isLoading() || !uploadedImage()"
+          class="w-full sm:w-auto inline-flex items-center justify-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        >
+          Analyze Image
+        </button>
+      </div>
+    </div>
+    
+    <div class="relative min-h-[20rem] bg-gray-900/50 rounded-lg p-4 ring-1 ring-white/10">
+      @if (isLoading()) {
+        <div class="absolute inset-0 flex items-center justify-center">
+            <app-loading-spinner />
+        </div>
+      } @else if (error()) {
+        <div class="flex items-center justify-center h-full">
+            <div class="rounded-md bg-red-900/50 p-4 border border-red-700 w-full">
+                <p class="text-sm text-red-300">{{ error() }}</p>
+            </div>
+        </div>
+      } @else if (result()) {
+         <div class="prose prose-invert prose-sm max-w-none text-gray-300 overflow-y-auto h-full pr-2">
+            <h3 class="text-lg font-medium text-white mb-2">Analysis Result</h3>
+            <p [innerHTML]="formattedResult() | safeHtml"></p>
+         </div>
+      } @else {
+         <div class="flex items-center justify-center h-full text-center text-gray-500">
+            <p>Your analysis result will appear here.</p>
+         </div>
+      }
+    </div>
+  </div>
+  <app-camera-capture [isOpen]="isCameraOpen()" (imageCapture)="onImageCapture($event)" (closeModal)="closeCameraModal()" />
+</div>

@@ -1,0 +1,7 @@
+{
+  "name": "Copy of Copy of Gemini Interface Elements Design Studio",
+  "description": "An all-in-one app for front-end developers to generate UI components, create and edit images, and analyze designs using the power of the Gemini API.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}

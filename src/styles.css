@@ -1,0 +1,16 @@
+body {
+  /* 
+    The background image is now the only layer. The dark overlay has been removed 
+    to fix the "black screen" issue and make the background image visible.
+  */
+  background-image: radial-gradient(circle at top left, #2c1a4d 0%, #111827 40%);
+
+  /* Ensures the background image covers the entire viewport without stretching */
+  background-size: cover;
+  
+  /* Centers the background image */
+  background-position: center;
+  
+  /* Keeps the background image fixed in place while the content scrolls */
+  background-attachment: fixed;
+}
